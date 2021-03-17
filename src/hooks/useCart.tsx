@@ -55,7 +55,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         const response = await api.get("products");
         setProducts(response.data);
       } catch (error) {
-        return toast.error("Quantidade solicitada fora de estoque");
+        console.log(error);
       }
     }
 
@@ -64,7 +64,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         const response = await api.get("stock");
         setStocks(response.data);
       } catch (error) {
-        return toast.error("Quantidade solicitada fora de estoque");
+        console.log(error);
       }
     }
 
