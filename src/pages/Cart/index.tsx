@@ -6,8 +6,6 @@ import {
 } from "react-icons/md";
 import { useCart } from "../../hooks/useCart";
 import { formatPrice } from "../../util/format";
-
-// import { formatPrice } from '../../util/format';
 import { Container, ProductTable, Total } from "./styles";
 
 interface Product {
@@ -21,15 +19,7 @@ interface Product {
 const Cart = (): JSX.Element => {
   const { cart, removeProduct, updateProductAmount } = useCart();
 
-  const [value, setValue] = useState<Number>(0);
-
-  // const cartFormatted = cart.map(product => ({
-  //   // TODO
-  // }))
-
   let values: Array<number> = [];
-
-  console.log(values);
 
   for (let index = 0; index < cart.length; index++) {
     const element = cart[index];
@@ -42,7 +32,6 @@ const Cart = (): JSX.Element => {
   const total = values.reduce((acc, item) => item + acc, 0);
 
   function handleProductIncrement(product: Product) {
-    // TODO
     const increment = {
       productId: product.id,
       amount: product.amount + 1,

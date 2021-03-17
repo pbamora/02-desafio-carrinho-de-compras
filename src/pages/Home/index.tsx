@@ -25,6 +25,7 @@ const Home = (): JSX.Element => {
   const [products, setProducts] = useState<ProductFormatted[]>([]);
   const { addProduct, cart } = useCart();
 
+
   let cartItemsAmount: CartItemsAmount = {};
 
   for (let index = 0; index < cart.length; index++) {

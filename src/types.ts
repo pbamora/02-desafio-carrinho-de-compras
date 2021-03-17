@@ -4,7 +4,6 @@ export interface Product {
   price: number;
   image: string;
   amount: number;
-  stock: number;
 }
 
 export interface Stock {
