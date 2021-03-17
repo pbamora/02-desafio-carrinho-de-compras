@@ -1,13 +1,7 @@
-import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 import { toast } from "react-toastify";
 import { api } from "../services/api";
-import { Stock } from "../types";
+import { Product, Stock } from "../types";
 
 interface CartProviderProps {
   children: ReactNode;
@@ -16,15 +10,6 @@ interface CartProviderProps {
 interface UpdateProductAmount {
   productId: number;
   amount: number;
-}
-
-interface Product {
-  id: number;
-  title: string;
-  price: number;
-  image: string;
-  amount: number;
-  stock: number;
 }
 
 interface CartContextData {
@@ -46,99 +31,45 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
     return [];
   });
-  const [products, setProducts] = useState<Product[]>([]);
-  const [stocks, setStocks] = useState<Stock[]>([]);
-
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        const response = await api.get("products");
-        setProducts(response.data);
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    async function loadStocks() {
-      try {
-        const response = await api.get("stock");
-        setStocks(response.data);
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    loadProducts();
-    loadStocks();
-  }, []);
-
-  useEffect(() => {
-    if (!products) return;
-    localStorage.setItem("@RocketShoes:cart", JSON.stringify(cart));
-  }, [cart]);
 
   const addProduct = async (productId: number) => {
     try {
-      const newArrayProducts = [...products];
-      const newArrayStocks = [...stocks];
+      const productOnCart = cart.find((product) => product.id === productId);
 
-      const productFoundByProducId: any = newArrayProducts.find(
-        (p) => p.id === productId
-      );
-      const stockFoundByProductId: any = newArrayStocks.find(
-        (p) => p.id === productId
-      );
+      if (productOnCart) {
+        updateProductAmount({
+          productId,
+          amount: productOnCart.amount + 1,
+        });
+      } else {
+        const { data: product } = await api.get<Product>(
+          `products/${productId}`
+        );
 
-      const productToCart = {
-        id: productId,
-        title: productFoundByProducId.title,
-        price: productFoundByProducId.price,
-        image: productFoundByProducId.image,
-        amount: 1,
-        stock: stockFoundByProductId.amount,
-      };
-
-      const productIndex = cart.findIndex((p) => p.id === productId);
-
-      if (productIndex > -1) {
-        if (cart[productIndex].amount >= stockFoundByProductId.amount) {
-          throw new Error("Quantidade solicitada fora de estoque");
+        if (product) {
+          localStorage.setItem(
+            "@RocketShoes:cart",
+            JSON.stringify([...cart, { ...product, amount: 1 }])
+          );
+          setCart([...cart, { ...product, amount: 1 }]);
         }
-
-        cart[productIndex].amount += 1;
-        setCart([...cart]);
-      } else if (productIndex === -1) {
-        if (!productFoundByProducId) return;
-
-        setCart([...cart, productToCart]);
       }
     } catch (err) {
-      toast.error(
-        err.message.includes("fora de estoque")
-          ? err.message
-          : "Erro na adição do produto"
-      );
+      toast.error("Erro na adição do produto");
     }
   };
 
   const removeProduct = (productId: number) => {
     try {
-      const newCartArray = [...cart];
       const productIndex = cart.findIndex((p) => p.id === productId);
 
-      if (productIndex === -1) {
-        throw new Error("O produto não existe");
-      }
+      if (productIndex < 0) throw new Error();
 
-      newCartArray.splice(productIndex, 1);
-
-      setCart(newCartArray);
+      cart.splice(productIndex, 1);
+      localStorage.setItem("@RocketShoes:cart", JSON.stringify([...cart]));
+      setCart([...cart]);
     } catch (err) {
-      toast.error(
-        err.message.includes("O produto não existe")
-          ? err.message
-          : "Erro na adição do produto"
-      );
+      toast.error("Erro na remoção do produto");
     }
   };
 
@@ -147,39 +78,28 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     amount,
   }: UpdateProductAmount) => {
     try {
-      if (amount < 1) {
-        throw new Error("Quantidade inválida");
-      }
+      if (amount <= 0)
+        throw new Error("rro na alteração de quantidade do produto");
 
-      const newArrayStocks = [...stocks];
+      const { data: productOnStock } = await api
+        .get<Stock>(`stock/${productId}`)
+        .catch(() => {
+          throw new Error("Erro na alteração de quantidade do produto");
+        });
 
-      const stockFoundByProductId: any = newArrayStocks.find(
-        (p) => p.id === productId
-      );
-      const productIndex = cart.findIndex((p) => p.id === productId);
+      if (amount > productOnStock.amount)
+        throw new Error("Quantidade solicitada fora de estoque");
 
-      if (cart[productIndex].amount < 1) return;
+      const productOnCart = cart.find((product) => product.id === productId);
 
-      if (productIndex > -1) {
-        if (cart[productIndex].amount < 1) return;
+      if (!productOnCart)
+        throw new Error("Erro na alteração de quantidade do produto");
 
-        if (
-          cart[productIndex].amount === stockFoundByProductId.amount &&
-          amount > stockFoundByProductId.amount
-        ) {
-          toast.error("Quantidade solicitada fora de estoque");
-          return;
-        }
-
-        cart[productIndex].amount = amount;
-        setCart([...cart]);
-      }
+      productOnCart.amount = amount;
+      localStorage.setItem("@RocketShoes:cart", JSON.stringify([...cart]));
+      setCart([...cart]);
     } catch (err) {
-      toast.error(
-        err.message.includes("Quantidade inválida")
-          ? err.message
-          : "Erro na alteração de quantidade do produto"
-      );
+      toast.error(err.message);
     }
   };
 

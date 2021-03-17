@@ -25,7 +25,6 @@ const Home = (): JSX.Element => {
   const [products, setProducts] = useState<ProductFormatted[]>([]);
   const { addProduct, cart } = useCart();
 
-
   let cartItemsAmount: CartItemsAmount = {};
 
   for (let index = 0; index < cart.length; index++) {
@@ -36,9 +35,16 @@ const Home = (): JSX.Element => {
 
   useEffect(() => {
     async function loadProducts() {
-      const response = await api.get("/products");
+      const response = await api.get("products");
+      const { data } = response;
+      const products = data.map((product: Product) => {
+        return {
+          ...product,
+          priceFormatted: formatPrice(product.price),
+        };
+      });
 
-      setProducts(response.data);
+      setProducts(products);
     }
 
     loadProducts();
